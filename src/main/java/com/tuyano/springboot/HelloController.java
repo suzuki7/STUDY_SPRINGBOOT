@@ -1,11 +1,14 @@
 package com.tuyano.springboot;
 
 import java.util.ArrayList;
-
+import java.util.Optional;
+import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
-
 import com.tuyano.springboot.repositories.MyDataRepository;
 
 @Controller
@@ -28,6 +30,7 @@ public class HelloController {
 			ModelAndView mav){
 		mav.setViewName("index");
 		mav.addObject("msg", "test");
+		mav.addObject("formModel",mydata);
 		Iterable<MyData> list =repository.findAll();
 		mav.addObject("datalist",list);
 		return mav;
@@ -36,13 +39,85 @@ public class HelloController {
 	@RequestMapping(value="/", method= RequestMethod.POST)
 	@Transactional(readOnly=false)
 	public ModelAndView form(
-			@ModelAttribute("formModel") MyData mydata,
-			ModelAndView mav) {
+			@ModelAttribute("formModel") 
+			@Validated MyData mydata,
+			BindingResult result,
+			ModelAndView mov) {
+		ModelAndView res = null;
+		if(!result.hasErrors()) {
+		repository.saveAndFlush(mydata);
+		res =new ModelAndView("redirect:/");
+		}else {
+			mov.setViewName("index");
+			mov.addObject("msg","sorry,error is occured...");
+			Iterable<MyData> list = repository.findAll();
+			mov.addObject("detalist",list);
+			res = mov;
+		}
+		return res;
+	}
+	@RequestMapping(value = "/edit/{id}", method = RequestMethod.GET)
+	public ModelAndView edit(@ModelAttribute MyData mydata,@PathVariable int id , ModelAndView mav) {
+		mav.setViewName("edit");
+		mav.addObject("title","edit mydata");
+		Optional<MyData> data = repository.findById((long)id);
+		mav.addObject("formModel",data.get());
+		
+		return mav;
+	}
+		
+	@RequestMapping(value="/edit",method=RequestMethod.POST)
+	@Transactional(readOnly = false)
+	public ModelAndView update(@ModelAttribute MyData mydata,ModelAndView mav) {
 		repository.saveAndFlush(mydata);
 		return new ModelAndView("redirect:/");
 	}
+		
+
+	@RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
+	public ModelAndView delete(@PathVariable int id , ModelAndView mav) {
+		mav.setViewName("delete");
+		mav.addObject("title","delete mydata");
+		Optional<MyData> data = repository.findById((long)id);
+		mav.addObject("formModel",data.get());
+		
+		return mav;
+	}
+		
+	@RequestMapping(value="/delete",method=RequestMethod.POST)
+	@Transactional(readOnly = false)
+	public ModelAndView remove(@RequestParam long id,ModelAndView mav) {
+		repository.deleteById(id);
+		return new ModelAndView("redirect:/");
+	}
+		
+
 	
 	
+	@PostConstruct
+	public void init() {
+		//1つ目のダミーデータ作成
+		MyData d1 = new MyData();
+		d1.setName("tuyano");
+		d1.setAge(34);
+		d1.setMail("aaa.com@docomo.ne.jp");
+		d1.setMemo("this is my data");
+		repository.saveAndFlush(d1);
+		//2つ目のダミーデータ作成
+		MyData d2 = new MyData();
+		d2.setName("suzuki");
+		d2.setAge(35);
+		d2.setMail("yyy.com@docomo.ne.jp");
+		d2.setMemo("yuzu?");
+		repository.saveAndFlush(d2);		
+		//3つ目のダミーデータ作成
+		MyData d3 = new MyData();
+		d3.setName("asuka");
+		d3.setAge(27);
+		d3.setMail("zzzzz.com@docomo.ne.jp");
+		d3.setMemo("nase");
+		repository.saveAndFlush(d3);
+	}
 	
 
 }
