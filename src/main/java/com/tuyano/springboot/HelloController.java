@@ -1,9 +1,17 @@
 package com.tuyano.springboot;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.servlet.http.HttpServletRequest;
+
+import org.hsqldb.persist.RowInsertInterface.modes;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -23,105 +31,96 @@ public class HelloController {
 
 	@Autowired
 	MyDataRepository repository;
-
-	@RequestMapping(value="/", method= RequestMethod.GET)
-	public ModelAndView index(
-			@ModelAttribute("formModel") MyData mydata,
-			ModelAndView mav){
+	
+	@Autowired
+	private MyDataService service;
+	@Autowired
+	MyDataBean myDataBean;
+	
+	@RequestMapping(value="/page",method=RequestMethod.GET)
+	public ModelAndView index(ModelAndView mav , Pageable pageable) {
 		mav.setViewName("index");
-		mav.addObject("msg", "test");
-		mav.addObject("formModel",mydata);
-		Iterable<MyData> list =repository.findAll();
+		mav.addObject("title","FIND page");
+		mav.addObject("msg","MyDataのサンプルです");
+		Page<MyData> list = repository.findAll(pageable);
 		mav.addObject("datalist",list);
 		return mav;
 	}
 	
-	@RequestMapping(value="/", method= RequestMethod.POST)
-	@Transactional(readOnly=false)
-	public ModelAndView form(
-			@ModelAttribute("formModel") 
-			@Validated MyData mydata,
-			BindingResult result,
-			ModelAndView mov) {
-		ModelAndView res = null;
-		if(!result.hasErrors()) {
-		repository.saveAndFlush(mydata);
-		res =new ModelAndView("redirect:/");
-		}else {
-			mov.setViewName("index");
-			mov.addObject("msg","sorry,error is occured...");
-			Iterable<MyData> list = repository.findAll();
-			mov.addObject("detalist",list);
-			res = mov;
-		}
-		return res;
-	}
-	@RequestMapping(value = "/edit/{id}", method = RequestMethod.GET)
-	public ModelAndView edit(@ModelAttribute MyData mydata,@PathVariable int id , ModelAndView mav) {
-		mav.setViewName("edit");
-		mav.addObject("title","edit mydata");
-		Optional<MyData> data = repository.findById((long)id);
-		mav.addObject("formModel",data.get());
-		
-		return mav;
-	}
-		
-	@RequestMapping(value="/edit",method=RequestMethod.POST)
-	@Transactional(readOnly = false)
-	public ModelAndView update(@ModelAttribute MyData mydata,ModelAndView mav) {
-		repository.saveAndFlush(mydata);
-		return new ModelAndView("redirect:/");
-	}
-		
-
-	@RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
-	public ModelAndView delete(@PathVariable int id , ModelAndView mav) {
-		mav.setViewName("delete");
-		mav.addObject("title","delete mydata");
-		Optional<MyData> data = repository.findById((long)id);
-		mav.addObject("formModel",data.get());
-		
-		return mav;
-	}
-		
-	@RequestMapping(value="/delete",method=RequestMethod.POST)
-	@Transactional(readOnly = false)
-	public ModelAndView remove(@RequestParam long id,ModelAndView mav) {
-		repository.deleteById(id);
-		return new ModelAndView("redirect:/");
-	}
-		
-
 	
+	@RequestMapping(value="/{id}",method=RequestMethod.GET)
+	public ModelAndView indexById(@PathVariable Long id,ModelAndView mav) {
+		mav.setViewName("pickup");
+		mav.addObject("title","Pick up page");
+		String table ="<table>" + myDataBean.getTableTagById(id) + "</table>";
+		mav.addObject("msg","pickup data id =" + id);
+		mav.addObject("data",table);
+		return mav;
+		
+	}
+	
+	
+	
+	
+	@RequestMapping(value="/",method=RequestMethod.GET)
+	public ModelAndView index(ModelAndView mav) {
+		mav.setViewName("index");
+		mav.addObject("title","find page");
+		mav.addObject("msg","MyDataのサンプルです");
+		List<MyData> list = service.getAll();
+		mav.addObject("datalist",list);
+		return mav;
+	}
+	
+	@RequestMapping(value="/find",method=RequestMethod.GET)
+	public ModelAndView find(ModelAndView mav) {
+		mav.setViewName("find");
+		mav.addObject("title","find page");
+		mav.addObject("msg","MyDataのサンプルです");
+		List<MyData> list = service.getAll();
+		mav.addObject("datalist",list);
+		return mav;
+	}
+	
+	@RequestMapping(value="/find",method=RequestMethod.POST)
+	public ModelAndView search(@RequestParam("fstr")String param,ModelAndView mav) {
+		mav.setViewName("find");
+		if(param =="") {
+			mav = new ModelAndView("redirect:/find");
+		}else {
+			mav.addObject("title","find result");
+			mav.addObject("msg","[" + param + "]の検査結果");
+			mav.addObject("value",param);
+			List<MyData> list = service.find(param);
+		}
+		return mav;
+	}
 	
 	@PostConstruct
 	public void init() {
-		//1つ目のダミーデータ作成
 		MyData d1 = new MyData();
-		d1.setName("tuyano");
+		d1.setName("suzuki");
 		d1.setAge(34);
-		d1.setMail("aaa.com@docomo.ne.jp");
-		d1.setMemo("this is my data");
+		d1.setMail("www@ddd");
+		d1.setMemo("111111111");
 		repository.saveAndFlush(d1);
-		//2つ目のダミーデータ作成
+
 		MyData d2 = new MyData();
-		d2.setName("suzuki");
-		d2.setAge(35);
-		d2.setMail("yyy.com@docomo.ne.jp");
-		d2.setMemo("yuzu?");
-		repository.saveAndFlush(d2);		
-		//3つ目のダミーデータ作成
+		d2.setName("suzu");
+		d2.setAge(24);
+		d2.setMail("ww222w@ddd");
+		d2.setMemo("12221111");
+		repository.saveAndFlush(d2);
+		
 		MyData d3 = new MyData();
-		d3.setName("asuka");
-		d3.setAge(27);
-		d3.setMail("zzzzz.com@docomo.ne.jp");
-		d3.setMemo("nase");
+		d3.setName("suzuki3333");
+		d3.setAge(33);
+		d3.setMail("www333@ddd");
+		d3.setMemo("111333111");
 		repository.saveAndFlush(d3);
 	}
-	
-
 }
-	
+//	@PersistenceContext
 //	@RequestMapping(value="/{num}")
 //	public ModelAndView index(@PathVariable int num,ModelAndView mav) {
 //		mav.setViewName("index");
