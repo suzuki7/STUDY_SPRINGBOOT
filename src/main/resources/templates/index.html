@@ -11,23 +11,36 @@
 		tr{margin:5px;}
 		th{padding:5px; color:white; background:darkgray;}
 		td{padding:5px; color:black; background:#f0f0f0;}
+		table.navi{width:100%; background:white;}
+		table.navi tr {background:white;}
+		table.navi tr td {background:white;}
 		.err{color:red};
 		</style>
 		
 
 </head>
 <body>
-	<h1>Sample Page</h1>
+	<h1>Find Page</h1>
 	<p th:text="${msg}"></p>
-	<ol id ="obj"></ol>
 	<table>
-	<tr><th>ID</th><th>name</th><th>mail</th><th>age</th><th>memo</th></tr>
+	<form method = "post" action="/find">
+	<tr><td>åüçı</td>
+		<td><input type="text" name="find" size="20" th:value="${value}"/></td>
+	</tr>
+	<tr><td></td>
+		<td><input type="submit"/></td></tr>
+	</form>
+	</table>
+
+	<hr/>
+
+	<table>
+	<tr><th>ID</th><th>name</th><th>mail</th></tr>
 	<tr th:each="obj : ${datalist}">
-		<td th:text="${obj.id}"></td>
 		<td th:text="${obj.name}"></td>
-		<td th:text="${obj.mail}"></td>
-		<td th:text="${obj.age}"></td>
 		<td th:text="${obj.memo}"></td>
+		<td th:text="${obj.date}"></td>
+		
 	</tr>
 	</table>
 </body>
